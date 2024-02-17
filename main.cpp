@@ -178,6 +178,11 @@ public:
   }
   bool getLesion() { return this->lesionado; }
   void setLecionado(bool valor) { this->lesionado = valor; }
+
+  void setNombre(string nombre) { this->nombre = nombre; }
+  void setApellido(string apellido) { this->apellido = apellido; }
+  void setExperiencia(int experiencia) { this->experiencia = experiencia; }
+  void setPosicion(Posicion posicion) { this->posicion = posicion; }
 };
 
 // Equipo
@@ -236,8 +241,11 @@ public:
   string getNombre() { return this->nombre; }
 
   // Imprime los jugadores que pertenecen al equipo
-  void imprimirJugadores(Jugador *jugadores) {
+  void imprimirJugadores(Jugador *jugadores, bool numerado) {
     for (int i = 0; i < this->n_jugadores; i++) {
+      if (numerado) {
+        cout << i + 1 << ") ";
+      }
       jugadores[jugadoresIdx[i]].print();
     }
   }
@@ -255,12 +263,18 @@ public:
   }
   void imprimirJugadoresLesionados(Jugador *jugadores) {
     for (int i = 0; i < this->n_jugadores; i++) {
-      if(jugadores[jugadoresIdx[i]].getLesion()) {
+      if (jugadores[jugadoresIdx[i]].getLesion()) {
         jugadores[jugadoresIdx[i]].print();
       }
     }
   }
   void print() { cout << this->getNombre() << endl; }
+
+  // Retorna el indice del jugador en el arreglo original
+  // desde el arreglo de jugadores propios del equipo
+  int getJugadorIdx(int idx) { return jugadoresIdx[idx]; }
+
+  int getNJugadores() { return this->n_jugadores; }
 };
 
 /*#####################
@@ -270,6 +284,20 @@ public:
 void extraerEquipo(Equipo *equipos, int &n_equipos, string line) {
   equipos[n_equipos].inicializar(line);
   n_equipos++;
+}
+
+Posicion evaluarPosicion(string palabra) {
+  Posicion pos;
+  if (palabra.compare("Portero") == 0) {
+    pos = Pos_Portero;
+  } else if (palabra.compare("Defensa") == 0) {
+    pos = Pos_Defenza;
+  } else if (palabra.compare("Delantero") == 0) {
+    pos = Pos_Delantero;
+  } else if (palabra.compare("Mediocampista") == 0) {
+    pos = Pos_Mediocampista;
+  }
+  return pos;
 }
 
 // Añade un jugador al arreglo de la informacion contenida en la linea
@@ -287,16 +315,7 @@ void extraerJugador(Jugador *jugadores, int &n_jugadores, string line) {
   cursor = line.find(" ", cursor) + 1;
   string exp = line.substr(cursor, cursor - line.length());
 
-  Posicion pos;
-  if (posicion.compare("Portero") == 0) {
-    pos = Pos_Portero;
-  } else if (posicion.compare("Defensa") == 0) {
-    pos = Pos_Defenza;
-  } else if (posicion.compare("Delantero") == 0) {
-    pos = Pos_Delantero;
-  } else if (posicion.compare("Mediocampista") == 0) {
-    pos = Pos_Mediocampista;
-  }
+  Posicion pos = evaluarPosicion(posicion);
 
   int experiencia = stoi(exp);
 
@@ -605,8 +624,91 @@ public:
     n_equipos -= 1;
   }
 
-  void AgregarJugadorAEquipo(int equipoIdx){
+  void AgregarJugadorAEquipo(int equipoIdx) {
+    string nombre;
+    string apellido;
+    string pos;
+    int experiencia;
+    cin >> nombre;
+    cin >> apellido;
+    cin >> pos;
+    cin >> experiencia;
+    Posicion posicion = evaluarPosicion(pos);
 
+    jugadores[n_jugadores].inicializar(equipos[equipoIdx].getNombre(), nombre,
+                                       apellido, posicion, experiencia);
+    equipos[equipoIdx].sumarJugador(n_jugadores, jugadores);
+    n_jugadores++;
+  }
+
+  void ModificarJugador(int equipoIdx) {
+    equipos[equipoIdx].imprimirJugadores(this->jugadores, true);
+    int jugador = 0;
+    cin >> jugador;
+    if (jugador - 1 < 0 || jugador - 1 > equipos[equipoIdx].getNJugadores()) {
+      return;
+    }
+    int jugadorIdx = equipos[equipoIdx].getJugadorIdx(jugador);
+    int opt = 0;
+    cout << "1) Nombre: " << jugadores[jugadorIdx].getNombre() << endl;
+    cout << "2) Apellido: " << jugadores[jugadorIdx].getApellido() << endl;
+    cout << "3) Posicion: " << jugadores[jugadorIdx].getPosicionStr() << endl;
+    cout << "4) Experiencia: " << jugadores[jugadorIdx].getExperiencia()
+         << endl;
+    cout << "5) Volver: " << jugadores[jugadorIdx].getExperiencia() << endl;
+
+    cin >> opt;
+    if(opt == 1){
+      string nombre;
+      cin >> nombre;
+      jugadores[jugadorIdx].setNombre(nombre);
+    } else if(opt == 2){
+      string apellido;
+      cin >> apellido;
+      jugadores[jugadorIdx].setApellido(apellido);
+    } else if(opt == 3){
+      string pos ;
+      cin >> pos;
+      Posicion posicion = evaluarPosicion(pos);
+      jugadores[jugadorIdx].setExperiencia(posicion);
+    } else if(opt == 3){
+      int experiencia ;
+      cin >> experiencia;
+      jugadores[jugadorIdx].setExperiencia(experiencia);
+    }
+
+  }
+
+  void MenuJugadoresEquipo(int equipoIdx) {
+    int opt = 0;
+    do {
+      if (mostrar_menus) {
+        cout << "1. Todos" << endl;
+        cout << "2. Agregar" << endl;
+        cout << "3. Modificar" << endl;
+        cout << "4. Eliminar" << endl;
+        cout << "5. Volver" << endl;
+      }
+      cin >> opt;
+      switch (opt) {
+      case 1:
+        equipos[equipoIdx].imprimirJugadores(this->jugadores, false);
+        break;
+      case 2:
+        AgregarJugadorAEquipo(equipoIdx);
+        break;
+      case 3:
+        ModificarJugador(equipoIdx);
+        break;
+      case 4:
+        break;
+      case 5:
+        break;
+      default:
+        cout << "[Error]: Opcion Invalida." << endl;
+        break;
+      }
+    } while (opt != 5);
   }
 
   void MenuEquipoJugadores() {
@@ -631,7 +733,7 @@ public:
       cin >> opt;
       switch (opt) {
       case 1:
-        equipos[idx].imprimirJugadores(this->jugadores);
+        MenuJugadoresEquipo(idx);
         break;
       case 2:
         equipos[idx].imprimirMejoresJugadores(this->jugadores);
