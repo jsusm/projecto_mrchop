@@ -9,7 +9,7 @@ using namespace std;
       Constantes
 #####################*/
 const int nmax = 100;
-const bool mostrar_menus = true;
+const bool mostrar_menus = false;
 
 const int n_frasesPositivas = 9;
 const string frasesPositiva[n_frasesPositivas] = {
@@ -70,11 +70,14 @@ public:
   }
   // Inprimir los atributos de la instancia
   void print() {
-    cout << "Director: " << endl;
-    cout << "\tnombre: " << this->nombre << endl;
-    cout << "\tapellido: " << this->apellido << endl;
-    cout << "\texperiencia: " << this->experiencia << endl << endl;
+    cout << nombre << " " << apellido << " " << experiencia << endl;
   }
+  int getExperiencia() { return experiencia; }
+  string getNombre() { return nombre; }
+  string getApellido() { return apellido; }
+  void setNombe(string nombre) { this->nombre = nombre; }
+  void setApellido(string apellido) { this->apellido = apellido; }
+  void setExperiencia(int experiencia) { this->experiencia = experiencia; }
 };
 
 // Jugador
@@ -134,9 +137,23 @@ public:
     cout << endl;
   }
 
-  void print() {
-    cout << this->getNombreCompleto() << this->getPosicionStr()
+  void print(bool equipo) {
+    if (equipo) {
+      cout << getEquipo() << " ";
+    }
+    cout << this->getNombreCompleto() << " " << this->getPosicionStr() << " "
          << this->getExperiencia() << endl;
+  }
+
+  void printGoles() {
+    cout << this->getEquipo() << " " << this->getNombreCompleto() << " " << this->getPosicionStr() << " "
+         << this->getGoles();
+    if (goles == 1) {
+      cout << " Gol";
+    } else {
+      cout << " Goles";
+    }
+    cout << endl;
   }
 
   string getEquipo() { return this->equipo; }
@@ -177,6 +194,7 @@ public:
     return this->goles;
   }
   bool getLesion() { return this->lesionado; }
+  int getGoles() { return this->goles; }
   void setLecionado(bool valor) { this->lesionado = valor; }
 
   void setNombre(string nombre) { this->nombre = nombre; }
@@ -196,21 +214,21 @@ class Equipo {
 
 public:
   // Inicializa a valores po defecto
-  Equipo() { this->n_jugadores = 0; }
+  Equipo() {
+    this->n_jugadores = 0;
+    inicializarOrdenamientos();
+  }
 
   Equipo(string nombre) { this->nombre = nombre; }
 
   void inicializarOrdenamientos() {
-    for (int i = 0; i < n_jugadores; i++) {
+    for (int i = 0; i < max_jugadores; i++) {
       mejoresJugadores[i] = i;
     }
   }
 
   // Asignar valores a la instancia
-  void inicializar(string nombre) {
-    this->nombre = nombre;
-    this->inicializarOrdenamientos();
-  }
+  void inicializar(string nombre) { this->nombre = nombre; }
 
   // Ordenamiento
   // el arreglo de mejores jugadores tiene que estar en sus valores por defecto
@@ -234,7 +252,6 @@ public:
     this->jugadoresIdx[this->n_jugadores] = idx;
     n_jugadores++;
 
-    this->inicializarOrdenamientos();
     ordenarMejoresJugadores(jugadores);
   };
 
@@ -246,25 +263,25 @@ public:
       if (numerado) {
         cout << i + 1 << ") ";
       }
-      jugadores[jugadoresIdx[i]].print();
+      jugadores[jugadoresIdx[i]].print(false);
     }
   }
   // Imprime los jugadores que pertenecen al equipo
   void imprimirMejoresJugadores(Jugador *jugadores) {
     for (int i = 0; i < this->n_jugadores; i++) {
-      jugadores[jugadoresIdx[mejoresJugadores[i]]].print();
+      jugadores[jugadoresIdx[mejoresJugadores[i]]].print(false);
     }
   }
   // Imprime los mejores jugadores en sentido contrario
   void imprimirJugadoresNuevos(Jugador *jugadores) {
     for (int i = 1; i <= this->n_jugadores; i++) {
-      jugadores[jugadoresIdx[mejoresJugadores[n_jugadores - i]]].print();
+      jugadores[jugadoresIdx[mejoresJugadores[n_jugadores - i]]].print(false);
     }
   }
   void imprimirJugadoresLesionados(Jugador *jugadores) {
     for (int i = 0; i < this->n_jugadores; i++) {
       if (jugadores[jugadoresIdx[i]].getLesion()) {
-        jugadores[jugadoresIdx[i]].print();
+        jugadores[jugadoresIdx[i]].print(true);
       }
     }
   }
@@ -275,6 +292,17 @@ public:
   int getJugadorIdx(int idx) { return jugadoresIdx[idx]; }
 
   int getNJugadores() { return this->n_jugadores; }
+
+  // Recive el indice del jugador en el equipo
+  int removerJugador(int idx) {
+    for (int i = idx; i < this->n_jugadores - 1; i++) {
+      int aux = jugadoresIdx[i];
+      jugadoresIdx[i] = jugadoresIdx[i + 1];
+      jugadoresIdx[i + 1] = aux;
+    }
+    n_jugadores--;
+    return this->n_jugadores;
+  }
 };
 
 /*#####################
@@ -468,7 +496,6 @@ void extraerEntradaJornada(Jugador *jugadores, int &n_jugadores, string line) {
 
   // buscar el jugador
   string equipo = equipo1 + " " + equipo2;
-  cout << "Leyendo linea -> " << line << endl;
   int jugadorActualIdx = -1;
   for (int j = 0; j < n_jugadores; j++) {
     if (jugadores[j].getEquipo().compare(equipo) == 0 &&
@@ -533,10 +560,23 @@ void leerJornada(string nombreArchivo, Equipo *equipos, int &n_equipos,
   archivo.close();
 }
 
-/*#########################
-Operaciones sobre arreglos
-#########################*/
-
+string posicionStr(Posicion posicion) {
+  switch (posicion) {
+  case Pos_Portero:
+    return "Portero";
+    break;
+  case Pos_Delantero:
+    return "Delantero";
+    break;
+  case Pos_Defenza:
+    return "Defenza";
+    break;
+  case Pos_Mediocampista:
+    return "Mediocampista";
+    break;
+  }
+  return "";
+}
 /*#####################
         Menu
 #####################*/
@@ -551,9 +591,12 @@ private:
   Director directores[nmax];
   int n_directores = 0;
 
+  int mejoresJugadores[nmax];
+  int mejoresDirectores[nmax];
+
   void imprimirTitulo(string titulo, bool menu) {
-    cout << endl;
     if (mostrar_menus) {
+      cout << endl;
       cout << "----------";
       if (menu) {
         cout << "Menu ";
@@ -563,11 +606,50 @@ private:
     }
   }
 
+  void inicializarOrdenamientos() {
+    for (int i = 0; i < nmax; i++) {
+      mejoresJugadores[i] = i;
+      mejoresDirectores[i] = i;
+    }
+  }
+
+  void ordenarMejoresJugadores() {
+    for (int i = 0; i < n_jugadores; i++) {
+      for (int j = 0; j < n_jugadores; j++) {
+        if (jugadores[mejoresJugadores[i]].getExperiencia() >
+            jugadores[mejoresJugadores[j]].getExperiencia()) {
+          int aux = mejoresJugadores[i];
+          mejoresJugadores[i] = mejoresJugadores[j];
+          mejoresJugadores[j] = aux;
+        }
+      }
+    }
+  }
+  void ordenarMejoresDirectores() {
+    for (int i = 0; i < n_directores; i++) {
+      for (int j = 0; j < n_directores; j++) {
+        if (directores[mejoresDirectores[i]].getExperiencia() >
+            directores[mejoresDirectores[j]].getExperiencia()) {
+          int aux = mejoresDirectores[i];
+          mejoresDirectores[i] = mejoresDirectores[j];
+          mejoresDirectores[j] = aux;
+        }
+      }
+    }
+  }
+
 public:
   Menu() {
     leerEntrada(equipos, n_equipos, jugadores, n_jugadores, directores,
                 n_directores);
+    inicializarOrdenamientos();
+    ordenarMejoresJugadores();
+    ordenarMejoresDirectores();
   }
+
+  /*#####################
+     Menu Equipos 1
+  #####################*/
 
   void AgregarEquipo() {
     cin.ignore();
@@ -639,6 +721,7 @@ public:
                                        apellido, posicion, experiencia);
     equipos[equipoIdx].sumarJugador(n_jugadores, jugadores);
     n_jugadores++;
+    ordenarMejoresJugadores();
   }
 
   void ModificarJugador(int equipoIdx) {
@@ -648,35 +731,59 @@ public:
     if (jugador - 1 < 0 || jugador - 1 > equipos[equipoIdx].getNJugadores()) {
       return;
     }
-    int jugadorIdx = equipos[equipoIdx].getJugadorIdx(jugador);
+    int jugadorIdx = equipos[equipoIdx].getJugadorIdx(jugador - 1);
     int opt = 0;
     cout << "1) Nombre: " << jugadores[jugadorIdx].getNombre() << endl;
     cout << "2) Apellido: " << jugadores[jugadorIdx].getApellido() << endl;
     cout << "3) Posicion: " << jugadores[jugadorIdx].getPosicionStr() << endl;
     cout << "4) Experiencia: " << jugadores[jugadorIdx].getExperiencia()
          << endl;
-    cout << "5) Volver: " << jugadores[jugadorIdx].getExperiencia() << endl;
+    cout << "5) Volver" << endl;
 
     cin >> opt;
-    if(opt == 1){
+    if (opt == 1) {
       string nombre;
       cin >> nombre;
       jugadores[jugadorIdx].setNombre(nombre);
-    } else if(opt == 2){
+    } else if (opt == 2) {
       string apellido;
       cin >> apellido;
       jugadores[jugadorIdx].setApellido(apellido);
-    } else if(opt == 3){
-      string pos ;
+    } else if (opt == 3) {
+      string pos;
       cin >> pos;
       Posicion posicion = evaluarPosicion(pos);
-      jugadores[jugadorIdx].setExperiencia(posicion);
-    } else if(opt == 3){
-      int experiencia ;
+      jugadores[jugadorIdx].setPosicion(posicion);
+    } else if (opt == 4) {
+      int experiencia;
       cin >> experiencia;
       jugadores[jugadorIdx].setExperiencia(experiencia);
     }
+    if (opt != 5) {
+      jugadores[jugadorIdx].print(false);
+    }
 
+    ordenarMejoresJugadores();
+    equipos[equipoIdx].ordenarMejoresJugadores(jugadores);
+  }
+
+  void EliminarJugador(int equipoIdx) {
+    equipos[equipoIdx].imprimirJugadores(jugadores, true);
+    int jugador = 0;
+    cin >> jugador;
+    if (jugador - 1 < 0 || jugador - 1 > equipos[equipoIdx].getNJugadores()) {
+      return;
+    }
+    int idx = equipos[equipoIdx].getJugadorIdx(jugador);
+    // eliminamos el jugador en el arreglo jugadores
+    for (int i = idx; i < n_jugadores - 1; i++) {
+      Jugador aux = jugadores[i];
+      jugadores[i] = jugadores[i + 1];
+      jugadores[i + 1] = aux;
+    }
+    n_jugadores--;
+    // eliminamos el jugador en el equipo
+    equipos[equipoIdx].removerJugador(jugador);
   }
 
   void MenuJugadoresEquipo(int equipoIdx) {
@@ -701,6 +808,7 @@ public:
         ModificarJugador(equipoIdx);
         break;
       case 4:
+        EliminarJugador(equipoIdx);
         break;
       case 5:
         break;
@@ -789,6 +897,241 @@ public:
     } while (opt != 5);
   }
 
+  /*#####################
+     Menu Jugadores 2
+  #####################*/
+  void listarJugadoresPorTipo(Posicion posicion, bool ordenados) {
+    for (int i = 0; i < n_jugadores; i++) {
+      int idx = i;
+      if (ordenados) {
+        idx = mejoresJugadores[i];
+      }
+      if (jugadores[idx].getPosicion() == posicion) {
+        jugadores[idx].print(true);
+      }
+    }
+  }
+
+  void listarGoleadores() {
+    int goleadores[nmax];
+    int n_goleadores = 0;
+    for (int i = 0; i < n_jugadores; i++) {
+      if (jugadores[i].getGoles() > 0) {
+        goleadores[n_goleadores] = i;
+        n_goleadores++;
+      }
+    }
+    for (int i = 0; i < n_goleadores; i++) {
+      for (int j = 0; j < n_goleadores; j++) {
+        if (jugadores[goleadores[i]].getGoles() >
+            jugadores[goleadores[j]].getGoles()) {
+          int aux = goleadores[i];
+          goleadores[i] = goleadores[j];
+          goleadores[j] = aux;
+        }
+      }
+    }
+    for (int i = 0; i < n_goleadores; i++) {
+      jugadores[goleadores[i]].printGoles();
+    }
+  }
+
+  void MenuJugadores() {
+    imprimirTitulo("Jugadores", true);
+    int opt_pos;
+    do {
+      if (mostrar_menus) {
+        cout << "1. Porteros" << endl;
+        cout << "2. Defensas" << endl;
+        cout << "3. Mediocampistas" << endl;
+        cout << "4. Delanteros" << endl;
+        cout << "5. Goleadores" << endl;
+        cout << "6. Volver" << endl;
+      }
+      cin >> opt_pos;
+      if (opt_pos >= 1 && opt_pos <= 4) {
+        Posicion posicion;
+        switch (opt_pos) {
+        case 1:
+          posicion = Pos_Portero;
+          break;
+        case 2:
+          posicion = Pos_Defenza;
+          break;
+        case 3:
+          posicion = Pos_Mediocampista;
+          break;
+        case 4:
+          posicion = Pos_Delantero;
+          break;
+        }
+        int opt_ordenados;
+        do {
+          imprimirTitulo(posicionStr(posicion), true);
+          if (mostrar_menus) {
+            cout << "1. Todos" << endl;
+            cout << "2. Los Mejores" << endl;
+            cout << "3. Volver" << endl;
+          }
+          cin >> opt_ordenados;
+          switch (opt_ordenados) {
+          case 1:
+            listarJugadoresPorTipo(posicion, false);
+            break;
+          case 2:
+            listarJugadoresPorTipo(posicion, true);
+            break;
+          case 3:
+            break;
+          default:
+            cout << "Opcion invalida." << endl;
+          }
+        } while (opt_ordenados != 3);
+      } else if (opt_pos == 5) {
+        listarGoleadores();
+      } else if (opt_pos != 6) {
+        cout << "Opcion invalida." << endl;
+      }
+    } while (opt_pos != 6);
+  }
+
+  /*#####################
+     Menu Directores 3
+  #####################*/
+  void imprimirDirectores(bool ordenados, bool listados) {
+    for (int i = 0; i < n_directores; i++) {
+      int idx = i;
+      if (ordenados) {
+        idx = mejoresDirectores[i];
+      }
+      if (listados) {
+        cout << i + 1 << ") ";
+      }
+      directores[idx].print();
+    }
+  }
+
+  void AgregarDirector() {
+    cin.ignore();
+    string nombre;
+    string apellido;
+    int experiencia;
+    getline(cin, nombre);
+    getline(cin, apellido);
+    cin >> experiencia;
+    directores[n_directores].inicializar(nombre, apellido, experiencia);
+    n_directores++;
+    ordenarMejoresDirectores();
+  }
+
+  void modificarDirector() {
+    imprimirDirectores(false, true);
+    int director = 0;
+    cin >> director;
+    if (director - 1 < 0 || director - 1 > n_directores) {
+      return;
+    }
+    director = director - 1;
+    int opt = 0;
+    cout << "1) Nombre: " << directores[director].getNombre() << endl;
+    cout << "2) Apellido: " << directores[director].getApellido() << endl;
+    cout << "3) Experiencia: " << directores[director].getExperiencia() << endl;
+    cout << "4) Volver" << endl;
+
+    cin >> opt;
+    if (opt == 1) {
+      string nombre;
+      cin >> nombre;
+      directores[director].setNombe(nombre);
+    } else if (opt == 2) {
+      string apellido;
+      cin >> apellido;
+      directores[director].setApellido(apellido);
+    } else if (opt == 3) {
+      int experiencia;
+      cin >> experiencia;
+      directores[director].setExperiencia(experiencia);
+    }
+    ordenarMejoresDirectores();
+  }
+
+  void eliminarDirector() {
+    imprimirDirectores(false, true);
+    int director = 0;
+    cin >> director;
+    if (director - 1 < 0 || director - 1 > n_directores) {
+      return;
+    }
+    for (int i = director; i < n_directores - 1; i++) {
+      Director aux = directores[i];
+      directores[i] = directores[i + 1];
+      directores[i + 1] = aux;
+    }
+    n_directores--;
+  }
+
+  void MenuDirectores() {
+    int opt = 0;
+    do {
+      if (mostrar_menus) {
+        imprimirTitulo("Directores", true);
+        cout << "1. Todos" << endl;
+        cout << "2. Los mas experimentados" << endl;
+        cout << "3. Agregar" << endl;
+        cout << "4. Modificar" << endl;
+        cout << "5. Eliminar" << endl;
+        cout << "6. Volver" << endl;
+      }
+      cin >> opt;
+      switch (opt) {
+      case 1:
+        imprimirDirectores(false, false);
+        break;
+      case 2:
+        imprimirDirectores(true, false);
+        break;
+      case 3:
+        AgregarDirector();
+        break;
+      case 4:
+        modificarDirector();
+        break;
+      case 5:
+        eliminarDirector();
+        break;
+      case 6:
+        break;
+      default:
+        cout << "[Error]: Opcion Invalida." << endl;
+        break;
+      }
+    } while (opt != 6);
+  }
+
+  /*#####################
+     Menu Jornadas 4
+  #####################*/
+  void MenuPartidos() {
+    int opt;
+    do {
+      if (mostrar_menus) {
+        cout << "1. Cargar partidos" << endl;
+        cout << "2. Volver" << endl;
+      }
+      cin >> opt;
+      if (opt == 1) {
+        string rutaPartidos;
+        cin.ignore();
+        getline(cin, rutaPartidos);
+        leerJornada(rutaPartidos, equipos, n_equipos, jugadores, n_jugadores,
+                    directores, n_directores);
+      } else if (opt != 2) {
+        cout << "[Error]: Opcion Invalida." << endl;
+      }
+
+    } while (opt != 2);
+  }
+
   void Principal() {
     int opt = 0;
     do {
@@ -806,16 +1149,15 @@ public:
         this->MenuEquipos();
         break;
       case 2:
-        //
+        MenuJugadores();
         break;
       case 3:
-        //
+        MenuDirectores();
         break;
       case 4:
-        //
+        MenuPartidos();
         break;
       case 5:
-        cout << "Programa finalizado" << endl;
         break;
       default:
         cout << "[Error]: Opcion Invalida." << endl;
